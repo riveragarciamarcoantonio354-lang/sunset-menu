@@ -1,0 +1,454 @@
+:root {
+  --fondo: #0b0b0c;
+  --superficie: #151517;
+  --superficie-2: #1d1d20;
+  --borde: #2a2a2e;
+  --plata: #d4d4d8;
+  --plata-suave: #8e8e96;
+  --naranja: #f0932b;
+  --naranja-oscuro: #c46d12;
+  --radio: 20px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--fondo);
+  color: var(--plata);
+  padding-bottom: 100px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: 'Comfortaa', sans-serif; }
+
+.oculto {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0);
+}
+
+/* ---------- Pantalla de carga ---------- */
+.loader {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--fondo);
+  display: grid; place-items: center;
+  transition: opacity .6s ease, visibility .6s;
+}
+.loader img { width: 180px; animation: respirar 1.4s ease-in-out infinite; }
+.loader.oculto-loader { opacity: 0; visibility: hidden; }
+
+@keyframes respirar {
+  0%, 100% { opacity: .5; transform: scale(.97); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- Encabezado ---------- */
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 56px 16px 40px;
+  overflow: hidden;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: -60%;
+  width: 140%; aspect-ratio: 1;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(240,147,43,.28) 0%, rgba(240,147,43,0) 60%);
+  pointer-events: none;
+}
+.hero-logo { position: relative; width: min(260px, 70%); }
+.hero-tag { position: relative; margin-top: 14px; font-size: 1rem; color: var(--plata); }
+.hero-info { position: relative; margin-top: 8px; font-size: .82rem; color: var(--plata-suave); }
+
+/* Botón "Ver menú" */
+.btn-menu {
+  position: relative;
+  margin-top: 22px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid var(--naranja);
+  font: 600 .95rem 'Inter', sans-serif;
+  padding: 12px 28px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .25s, color .25s;
+}
+.btn-menu:hover { background: var(--naranja); color: var(--fondo); }
+
+/* =========================================================
+   ESCENA: el frappé se desarma con el scroll
+   La sección es alta (420vh) y adentro hay una caja "sticky"
+   que se queda fija en pantalla mientras bajas.
+   ========================================================= */
+.escena {
+  position: relative;
+  height: 420vh;
+  background: #000;
+}
+.escena-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
+/* Degradados arriba y abajo para que el negro del video se funda con la página */
+.escena-sticky::before,
+.escena-sticky::after {
+  content: "";
+  position: absolute; left: 0; right: 0;
+  height: 80px;
+  z-index: 1;
+  pointer-events: none;
+}
+.escena-sticky::before { top: 0; background: linear-gradient(var(--fondo), rgba(0,0,0,0)); }
+.escena-sticky::after { bottom: 0; background: linear-gradient(rgba(0,0,0,0), var(--fondo)); }
+
+#frappe-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+}
+
+/* Títulos que cambian */
+.escena-textos {
+  position: absolute;
+  top: 7vh; left: 0; right: 0;
+  height: 80px;
+  z-index: 2;
+}
+.escena-texto {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  padding: 0 16px;
+}
+.escena-texto span {
+  font-size: .75rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--naranja);
+}
+.escena-texto h2 {
+  font-size: clamp(1.6rem, 5vw, 2.6rem);
+  color: #fff;
+  margin-top: 6px;
+}
+#texto-2, #texto-3 { opacity: 0; }
+
+/* Lista de ingredientes */
+.ingredientes {
+  position: absolute;
+  z-index: 2;
+  right: 6vw; top: 50%;
+  transform: translateY(-50%);
+  list-style: none;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.ingredientes li {
+  opacity: 0;
+  display: flex; align-items: center; gap: 12px;
+  font: 700 1rem 'Comfortaa', sans-serif;
+  color: #fff;
+  padding: 10px 18px;
+  background: rgba(21, 21, 23, .65);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.ingredientes li span { color: var(--naranja); font-size: .75rem; }
+
+/* Precio y botón del final */
+.escena-final {
+  position: absolute;
+  bottom: 7vh; left: 0; right: 0;
+  z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.escena-precio { font: 700 2rem 'Comfortaa', sans-serif; color: var(--naranja); }
+.escena-final .btn-menu { margin-top: 10px; background: var(--naranja); color: var(--fondo); }
+
+/* "Desliza" con rebote */
+.scroll-hint {
+  position: absolute;
+  z-index: 2;
+  bottom: 4vh; left: 0; right: 0;
+  text-align: center;
+  font-size: .8rem;
+  color: var(--plata-suave);
+  letter-spacing: .15em;
+  animation: rebote 1.6s ease-in-out infinite;
+}
+@keyframes rebote {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+/* En celular los ingredientes van abajo, en dos filas */
+@media (max-width: 700px) {
+  .ingredientes {
+    left: 16px; right: 16px; top: auto; bottom: 9vh;
+    transform: none;
+    flex-direction: row; flex-wrap: wrap; justify-content: center;
+    gap: 8px;
+  }
+  .ingredientes li { font-size: .78rem; padding: 7px 12px; gap: 6px; }
+  .escena-final { bottom: 14vh; }
+}
+
+/* ---------- Transición de cuadros ---------- */
+.transicion {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  pointer-events: none;
+  visibility: hidden;
+}
+.cuadro { background: var(--naranja); transform: scale(0); }
+.cuadro:nth-child(3n) { background: var(--naranja-oscuro); }
+.cuadro:nth-child(5n) { background: #ffb35c; }
+
+/* ---------- Cinta en movimiento ---------- */
+.marquee {
+  overflow: hidden;
+  border-top: 1px solid var(--borde);
+  border-bottom: 1px solid var(--borde);
+  background: var(--naranja);
+  color: var(--fondo);
+  padding: 10px 0;
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: deslizar 22s linear infinite;
+}
+.marquee span {
+  font-family: 'Comfortaa', sans-serif;
+  font-weight: 700;
+  font-size: .85rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+@keyframes deslizar {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ---------- Los más pedidos ---------- */
+.destacados { padding: 36px 0 12px; }
+.seccion-titulo { padding: 0 16px 16px; max-width: 700px; margin: 0 auto; }
+.seccion-titulo h2 { font-size: 1.4rem; color: #fff; }
+.seccion-titulo p { font-size: .8rem; color: var(--plata-suave); margin-top: 4px; }
+
+.carrusel {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px 16px 16px;
+  scrollbar-width: none;
+}
+.carrusel::-webkit-scrollbar { display: none; }
+
+.tarjeta {
+  flex: 0 0 72%;
+  max-width: 270px;
+  aspect-ratio: 3 / 4;
+  perspective: 1000px;
+  scroll-snap-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.tarjeta:focus { outline: none; }
+.tarjeta:focus-visible { outline: 2px solid var(--naranja); outline-offset: 4px; border-radius: var(--radio); }
+.tarjeta-inner {
+  position: relative;
+  width: 100%; height: 100%;
+  transition: transform .8s cubic-bezier(.2, .8, .2, 1);
+  transform-style: preserve-3d;
+}
+.tarjeta.volteada .tarjeta-inner { transform: rotateY(180deg); }
+
+.cara {
+  position: absolute; inset: 0;
+  border-radius: var(--radio);
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.frente { background: var(--superficie); }
+.frente img { width: 100%; height: 100%; object-fit: cover; }
+.frente::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,0) 55%);
+}
+.frente-info {
+  position: absolute; left: 16px; right: 16px; bottom: 16px;
+  z-index: 1;
+}
+.frente-info h3 { color: #fff; font-size: 1.05rem; line-height: 1.3; }
+.frente-info span { color: var(--naranja); font-weight: 600; }
+
+.sin-foto {
+  display: grid; place-items: center;
+  font-size: 4rem;
+  background: radial-gradient(circle at 50% 35%, var(--naranja) 0%, var(--naranja-oscuro) 45%, var(--superficie) 100%);
+}
+
+.reverso {
+  transform: rotateY(180deg);
+  background: var(--superficie-2);
+  border: 1px solid var(--borde);
+  padding: 22px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.reverso h3 { color: #fff; font-size: 1.1rem; }
+.reverso p { font-size: .88rem; line-height: 1.55; color: var(--plata); margin-top: 10px; }
+.reverso .precio-grande { font-size: 1.8rem; font-weight: 600; color: var(--naranja); }
+.btn-pedir {
+  display: block;
+  text-align: center;
+  background: var(--naranja);
+  color: var(--fondo);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 999px;
+  margin-top: 12px;
+}
+
+/* ---------- Buscador y categorías ---------- */
+.sticky-bar {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(11, 11, 12, .88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid var(--borde);
+}
+#buscador {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  color: #fff;
+  font: inherit;
+  outline: none;
+  transition: border-color .2s;
+}
+#buscador::placeholder { color: var(--plata-suave); }
+#buscador:focus { border-color: var(--naranja); }
+
+.categorias {
+  display: flex; gap: 8px;
+  overflow-x: auto;
+  padding: 10px 0 4px;
+  scrollbar-width: none;
+}
+.categorias::-webkit-scrollbar { display: none; }
+.categorias a {
+  flex-shrink: 0;
+  text-decoration: none;
+  color: var(--plata);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: .82rem;
+  font-weight: 500;
+  transition: background .25s, color .25s, border-color .25s;
+}
+.categorias a.activo {
+  background: var(--naranja);
+  border-color: var(--naranja);
+  color: var(--fondo);
+}
+
+/* ---------- Menú ---------- */
+#menu { max-width: 700px; margin: 0 auto; padding: 8px 16px; }
+
+.categoria {
+  margin-top: 32px;
+  scroll-margin-top: 130px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.categoria.visible { opacity: 1; transform: none; }
+
+.categoria h2 {
+  font-size: 1.15rem;
+  color: #fff;
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.categoria h2::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--borde), transparent);
+}
+.categoria ul {
+  list-style: none;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+.platillo {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--borde);
+}
+.platillo:last-child { border-bottom: none; }
+.platillo .nombre { font-size: .95rem; }
+.precio { font-weight: 600; color: var(--naranja); white-space: nowrap; }
+.precio.pendiente { font-weight: 400; font-size: .78rem; color: var(--plata-suave); }
+
+.sin-resultados { text-align: center; color: var(--plata-suave); padding: 40px 16px; }
+
+/* ---------- WhatsApp ---------- */
+.whatsapp {
+  position: fixed; bottom: 18px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  background: #25d366;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 14px 24px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  white-space: nowrap;
+}
+
+/* ---------- Pie ---------- */
+footer {
+  text-align: center;
+  padding: 56px 16px 24px;
+  color: var(--plata-suave);
+  font-size: .88rem;
+}
+.footer-logo { width: 120px; opacity: .8; margin-bottom: 14px; }
+.redes { display: flex; justify-content: center; gap: 18px; margin-bottom: 10px; }
+.redes a { color: var(--plata); font-weight: 500; text-decoration: none; }
+.nota { margin-top: 18px; font-size: .72rem; }
+.credito { margin-top: 6px; font-size: .72rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track, .scroll-hint, .loader img { animation: none; }
+  .categoria { opacity: 1; transform: none; transition: none; }
+  .tarjeta-inner { transition: none; }
+}
